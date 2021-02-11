@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.activitytransitiontrial">
+
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"></uses-permission>
+    <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION"></uses-permission>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"></uses-permission>
+    <uses-permission android:name="com.google.android.gms.permission.FOREGROUND_SERVICE"></uses-permission>
+    
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.ActivityTransitionTrial">
+        <activity android:name=".MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <service
+            android:name=".ActivityTransitionService"
+            android:enabled="true"
+            android:exported="false" />
+        <receiver
+            android:name=".ActivityTransitionBroadcastReceiver"
+            android:exported="false"
+            android:permission="com.google.android.gms.permission.ACTIVITY_RECOGNITION">
+            <intent-filter>
+                <action android:name="com.package.name.ACTION_PROCESS_ACTIVITY_TRANSITIONS" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name=".MainActivity$InternalReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.package.name.ACTION_INTERNAL_MESSAGE" />
+            </intent-filter>
+        </receiver>
+        <activity android:name=".PermissionRationaleActivity"/>
+    </application>
+
+</manifest>
