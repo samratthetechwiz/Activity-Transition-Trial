@@ -51,11 +51,9 @@ public class ActivityTransitionBroadcastReceiver extends BroadcastReceiver {
         if (ActivityTransitionResult.hasResult(intent)) {
             ActivityTransitionResult result = ActivityTransitionResult.extractResult(intent);
             for (ActivityTransitionEvent event : result.getTransitionEvents()) {
-                Toast.makeText(context,"RECEIVING",Toast.LENGTH_LONG).show();
                 Log.d(TAG, String.valueOf(event.getActivityType() + " " + event.getTransitionType()));
-                String info = "Transition: " + toActivityString(event.getActivityType()) +
-                        " (" + toTransitionType(event.getTransitionType()) + ")" + "   " +
-                        new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date());
+                String info = toActivityString(event.getActivityType()) +
+                        "," + toTransitionType(event.getTransitionType());
                 Intent i = new Intent(INTERNAL_RECEIVER_ACTION);
 
                 i.putExtra("Internal Message", info);

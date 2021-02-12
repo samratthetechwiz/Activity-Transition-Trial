@@ -17,19 +17,18 @@ import java.util.Arrays;
 public class PermissionRationaleActivity extends AppCompatActivity implements ActivityCompat.OnRequestPermissionsResultCallback {
     private String TAG = "DETECT TRANSITION";
     /* Id to identify Activity Recognition permission request. */
-    private static final int PERMISSION_REQUEST_ACTIVITY_RECOGNITION = 45;
+    private static final int PERMISSION_REQUEST = 45;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         // If permissions granted, we start the main activity (shut this activity down).
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION)
-                == PackageManager.PERMISSION_GRANTED  && ActivityCompat.checkSelfPermission(this, Manifest.permission.FOREGROUND_SERVICE)
-                == PackageManager.PERMISSION_GRANTED )  {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) == PackageManager.PERMISSION_GRANTED  &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.FOREGROUND_SERVICE) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)  {
             finish();
         }
-
         setContentView(R.layout.activity_permission_rational);
     }
 
@@ -40,8 +39,11 @@ public class PermissionRationaleActivity extends AppCompatActivity implements Ac
         // TODO: Review permission request for activity recognition.
         ActivityCompat.requestPermissions(
                 this,
-                new String[]{Manifest.permission.ACTIVITY_RECOGNITION, Manifest.permission.FOREGROUND_SERVICE},
-                PERMISSION_REQUEST_ACTIVITY_RECOGNITION);
+                new String[]{Manifest.permission.ACTIVITY_RECOGNITION,
+                        Manifest.permission.FOREGROUND_SERVICE,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                        Manifest.permission.READ_EXTERNAL_STORAGE},
+                PERMISSION_REQUEST);
     }
 
     public void onClickDenyPermissionRequest(View view) {
@@ -61,7 +63,7 @@ public class PermissionRationaleActivity extends AppCompatActivity implements Ac
 
         Log.d(TAG, "onRequestPermissionsResult(): " + permissionResult);
 
-        if (requestCode == PERMISSION_REQUEST_ACTIVITY_RECOGNITION) {
+        if (requestCode == PERMISSION_REQUEST) {
             // Close activity regardless of user's decision (decision picked up in main activity).
             finish();
         }

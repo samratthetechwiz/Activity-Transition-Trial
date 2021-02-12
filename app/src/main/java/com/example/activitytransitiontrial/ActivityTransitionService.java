@@ -117,6 +117,18 @@ public class ActivityTransitionService extends Service {
                         .setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_EXIT)
                         .build());
 
+        transitions.add(
+                new ActivityTransition.Builder()
+                        .setActivityType(DetectedActivity.RUNNING)
+                        .setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_ENTER)
+                        .build());
+
+        transitions.add(
+                new ActivityTransition.Builder()
+                        .setActivityType(DetectedActivity.RUNNING)
+                        .setActivityTransition(ActivityTransition.ACTIVITY_TRANSITION_EXIT)
+                        .build());
+
         request = new ActivityTransitionRequest(transitions);
         requestActivityUpdatesButtonHandler();
     }

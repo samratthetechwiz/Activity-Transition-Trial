@@ -13,13 +13,29 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -32,6 +48,13 @@ public class MainActivity extends AppCompatActivity {
     public boolean activityTrackingEnabled;
 
     private InternalReceiver internalReceiver = new InternalReceiver();
+
+    File baseDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+    String fileName = "Activity.txt";
+    String filePath = baseDir + File.separator + fileName;
+
+    Calendar calendar = Calendar.getInstance();
+    Date date = calendar.getTime();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,6 +102,70 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        Log.d(TAG,filePath);
+        writeToFile("Start Entry\n",getApplicationContext());
+        String check = readFromFile(getApplicationContext());
+    }
+
+    public static int getBatteryPercentage(Context context) {
+
+        if (Build.VERSION.SDK_INT >= 21) {
+
+            BatteryManager bm = (BatteryManager) context.getSystemService(BATTERY_SERVICE);
+            return bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+
+        } else {
+
+            IntentFilter iFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+            Intent batteryStatus = context.registerReceiver(null, iFilter);
+
+            int level = batteryStatus != null ? batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) : -1;
+            int scale = batteryStatus != null ? batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1) : -1;
+
+            double batteryPct = level / (double) scale;
+
+            return (int) (batteryPct * 100);
+        }
+    }
+
+    private void writeToFile(String data,Context context) {
+        try {
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(new FileOutputStream(filePath,true));
+            outputStreamWriter.write(data);
+            outputStreamWriter.close();
+        }
+        catch (IOException e) {
+            Log.e(TAG, "File write failed: " + e.toString());
+        }
+    }
+
+    private String readFromFile(Context context) {
+
+        String ret = "";
+
+        try {
+            InputStream inputStream = new FileInputStream(filePath);
+
+            if ( inputStream != null ) {
+                InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+                BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+                String receiveString = "";
+                StringBuilder stringBuilder = new StringBuilder();
+
+                while ( (receiveString = bufferedReader.readLine()) != null ) {
+                    stringBuilder.append("\n").append(receiveString);
+                }
+
+                inputStream.close();
+                ret = stringBuilder.toString();
+            }
+        }
+        catch (FileNotFoundException e) {
+            Log.e(TAG, "File not found: " + e.toString());
+        } catch (IOException e) {
+            Log.e(TAG, "Can not read file: " + e.toString());
+        }
+        return ret;
     }
 
     public void SaveBool(String key, boolean value){
@@ -109,10 +196,11 @@ public class MainActivity extends AppCompatActivity {
 
         // TODO: Review permission check for 29+.
         if (runningQOrLater) {
-            return PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.ACTIVITY_RECOGNITION
-            );
+            boolean permission = (PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.ACTIVITY_RECOGNITION) &&
+                                    PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.FOREGROUND_SERVICE) &&
+                                    PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) &&
+                                    PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE));
+            return permission;
         } else {
             return true;
         }
@@ -148,8 +236,14 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             Log.d(TAG, "onReceive(): " + intent);
             String message = intent.getStringExtra("Internal Message");
+            int batLevel = getBatteryPercentage(getApplicationContext());
+            message = message + "," + new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date())
+                    + "," + new SimpleDateFormat("dd-MM-yyyy", Locale.US).format(new Date())
+                    + "," + new SimpleDateFormat("EEEE", Locale.ENGLISH).format(date.getTime())
+                    + "," + String.valueOf(batLevel) + "\n";
             Log.d(TAG, "Got message: " + message);
             printToScreen(message);
+            writeToFile(message, context);
         }
     }
 }
