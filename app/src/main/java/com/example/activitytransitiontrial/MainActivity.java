@@ -14,6 +14,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -64,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
     private Button startButton;
     public boolean activityTrackingEnabled;
     FusedLocationProviderClient mFusedLocationClient;
+    DBHandler db;
 
     private InternalReceiver internalReceiver = new InternalReceiver();
 
@@ -81,6 +83,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        db = new DBHandler(this);
 
         startButton = findViewById(R.id.btn_start_tracking);
 
@@ -125,9 +129,48 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        Log.d(TAG,filePath);
-        writeToFile("Start Entry\n",getApplicationContext());
-        String check = readFromFile(getApplicationContext());
+        //Log.d(TAG,filePath);
+        //writeToFile("Start Entry\n",getApplicationContext());
+        //String check = readFromFile(getApplicationContext());
+
+        getLastLocation();
+        readDataFromDatabase();
+    }
+
+    private void readDataFromDatabase() {
+
+        // Reading all activity
+        Log.d(TAG, "Reading all activities..");
+        List<ActivityModel> activities = db.getAllActivities();
+
+        for (ActivityModel i : activities) {
+            String log = /*"ID : " + i.get_ID() +*/ "Activity : " + i.getActivity() + " \nTransition : " + i.getTransition(); /*+
+                    " \nStart Time : " + i.getStartTime() + " \nDate : " + i.getDate() +
+                    " \nDay Of Week : " + i.getDayOfWeek() + " \nBattery Percentage Start : " + i.getBatteryPercentageStart() +
+                    " \nBattery Percentage End : " + i.getBatteryPercentageEnd() +
+                    " \nBattery Percentage Consumed : " + i.getBatteryPercentageConsumed() +
+                    " \nLatitude : " + i.getLatitude() + " \nLongitude : " + i.getLongitude() + "\n\n";*/
+            // Writing activities to log
+            //Log.d(TAG, log);
+            printToScreen(log);
+        }
+
+    }
+
+    private void addDataToDatabase(String activity, String transition, String startTime, String date, String dayOfWeek,
+                                   double batteryPercentageStart, double batteryPercentageEnd, double batteryPercentageConsumed,
+                                   double latitude, double longitude) {
+        // Inserting Students
+        Log.d(TAG, "Inserting ..");
+        db.addActivity(new ActivityModel(activity, transition, startTime, date, dayOfWeek,
+                batteryPercentageStart, batteryPercentageEnd, batteryPercentageConsumed,
+                latitude, longitude));
+    }
+
+    private void updateDataInDatabase(int prevID, double batteryPercentageEnd, double batteryPercentageConsumed){
+        //Log.d(TAG,"Updating..");
+        int res = db.updateActivity(prevID, new ActivityModel(batteryPercentageEnd, batteryPercentageConsumed));
+        Log.d(TAG,"Update Status : " + res);
     }
 
     private boolean isLocationEnabled() {
@@ -137,27 +180,32 @@ public class MainActivity extends AppCompatActivity {
 
     @SuppressLint("MissingPermission")
     private void getLastLocation() {
-        // check if location is enabled
-        if (isLocationEnabled()) {
-            // getting last location from FusedLocationClient object
-            mFusedLocationClient.getLastLocation().addOnCompleteListener(new OnCompleteListener<Location>() {
-                @Override
-                public void onComplete(@NonNull Task<Location> task) {
-                    Location location = task.getResult();
-                    if (location == null) {
-                        requestNewLocationData();
-                    } else {
-                        latitude = location.getLatitude();
-                        longitude = location.getLongitude();
-                        //latitudeTextView.setText(location.getLatitude() + "");
-                        //longitTextView.setText(location.getLongitude() + "");
+        if(PermissionApproved()) {
+            // check if location is enabled
+            if (isLocationEnabled()) {
+                // getting last location from FusedLocationClient object
+                mFusedLocationClient.getLastLocation().addOnCompleteListener(new OnCompleteListener<Location>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Location> task) {
+                        Location location = task.getResult();
+                        if (location == null) {
+                            requestNewLocationData();
+                        } else {
+                            latitude = location.getLatitude();
+                            longitude = location.getLongitude();
+                            //latitudeTextView.setText(location.getLatitude() + "");
+                            //longitTextView.setText(location.getLongitude() + "");
+                        }
                     }
-                }
-            });
-        } else {
-            Toast.makeText(this, "Please turn on" + " your location...", Toast.LENGTH_LONG).show();
-            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-            startActivity(intent);
+                });
+            } else {
+                Toast.makeText(this, "Please turn on" + " your location...", Toast.LENGTH_LONG).show();
+                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivity(intent);
+            }
+        }else{
+            Intent startIntent = new Intent(getApplicationContext(), PermissionRationaleActivity.class);
+            startActivityForResult(startIntent, 0);
         }
     }
 
@@ -311,28 +359,54 @@ public class MainActivity extends AppCompatActivity {
 
     public void printToScreen(@NonNull String message) {
         mLogFragment.getLogView().println(message);
-        Log.d(TAG, message);
+        //Log.d(TAG, message);
     }
 
 
     public class InternalReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            date = calendar.getTime();
+            Calendar calendar = Calendar.getInstance();
+            Date date = calendar.getTime();
             getLastLocation();
 
             Log.d(TAG, "onReceive(): " + intent);
             String message = intent.getStringExtra("Internal Message");
+            String[] parts = message.split(",");
+            String activity = parts[0];
+            String transition = parts[1];
             int batLevel = getBatteryPercentage(getApplicationContext());
-            message = message + ", " + new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date())
-                    + ", " + new SimpleDateFormat("dd-MM-yyyy", Locale.US).format(new Date())
-                    + ", " + new SimpleDateFormat("EEEE", Locale.ENGLISH).format(date.getTime())
-                    + ", " + String.valueOf(batLevel)
-                    + ", " + latitude
-                    + ", " + longitude + "\n";
-            Log.d(TAG, "Got message: " + message);
+
+            Cursor cursor = db.getWritableDatabase().rawQuery("SELECT * FROM activity",null);
+            if(cursor.moveToLast()){
+                int prevID = cursor.getInt(0);
+                String prevActivity = cursor.getString(1);
+                String prevTransition = cursor.getString(2);
+                if(activity.equals(prevActivity) && transition.equals("EXIT")){
+                    cursor = db.getWritableDatabase().rawQuery("SELECT * FROM activity WHERE _ID = ?", new String[]{String.valueOf(prevID)});
+                    if( cursor != null && cursor.moveToFirst() ){
+                        double prevBatPercent = cursor.getDouble(6);
+                        double batUsed = prevBatPercent - batLevel;
+                        updateDataInDatabase(prevID, batLevel, batUsed);
+                    }
+                }
+            }
+
+            addDataToDatabase(activity, transition, new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date()),
+                    new SimpleDateFormat("dd-MM-yyyy", Locale.US).format(new Date()),
+                    new SimpleDateFormat("EEEE", Locale.ENGLISH).format(date.getTime()),
+                    batLevel, 0, 0,latitude, longitude);
+
+            message = "Activity : " + activity + " \nTransition : " + transition;
+                    /*+ " \nStart Time : "
+                    + new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date())
+                    + " \nDate : " + new SimpleDateFormat("dd-MM-yyyy", Locale.US).format(new Date())
+                    + " \nDay Of Week : " + new SimpleDateFormat("EEEE", Locale.ENGLISH).format(date.getTime())
+                    + " \nBattery Percentage : " + String.valueOf(batLevel)
+                    + " \nLatitude : " + latitude
+                    + " \nLongitude : " + longitude + "\n\n";*/
             printToScreen(message);
-            writeToFile(message, context);
+            //writeToFile(message, context);
         }
     }
 }
