@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -157,19 +158,21 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void addDataToDatabase(String activity, String transition, String startTime, String date, String dayOfWeek,
+    private void addDataToDatabase(String activity, String transition, String startTime, String endTime, double duration, String date, String dayOfWeek,
                                    double batteryPercentageStart, double batteryPercentageEnd, double batteryPercentageConsumed,
                                    double latitude, double longitude) {
         // Inserting Students
         Log.d(TAG, "Inserting ..");
-        db.addActivity(new ActivityModel(activity, transition, startTime, date, dayOfWeek,
+        db.addActivity(new ActivityModel(activity, transition, startTime, endTime, duration, date, dayOfWeek,
                 batteryPercentageStart, batteryPercentageEnd, batteryPercentageConsumed,
                 latitude, longitude));
     }
 
-    private void updateDataInDatabase(int prevID, double batteryPercentageEnd, double batteryPercentageConsumed){
+    private void updateDataInDatabase(int prevID, String endTime, double duration,
+                                      double batteryPercentageEnd, double batteryPercentageConsumed){
         //Log.d(TAG,"Updating..");
-        int res = db.updateActivity(prevID, new ActivityModel(batteryPercentageEnd, batteryPercentageConsumed));
+        int res = db.updateActivity(prevID, new ActivityModel(endTime, duration,
+                batteryPercentageEnd, batteryPercentageConsumed));
         Log.d(TAG,"Update Status : " + res);
     }
 
@@ -369,6 +372,7 @@ public class MainActivity extends AppCompatActivity {
             Calendar calendar = Calendar.getInstance();
             Date date = calendar.getTime();
             getLastLocation();
+            boolean insert = true;
 
             Log.d(TAG, "onReceive(): " + intent);
             String message = intent.getStringExtra("Internal Message");
@@ -385,17 +389,36 @@ public class MainActivity extends AppCompatActivity {
                 if(activity.equals(prevActivity) && transition.equals("EXIT")){
                     cursor = db.getWritableDatabase().rawQuery("SELECT * FROM activity WHERE _ID = ?", new String[]{String.valueOf(prevID)});
                     if( cursor != null && cursor.moveToFirst() ){
-                        double prevBatPercent = cursor.getDouble(6);
+                        double prevBatPercent = cursor.getDouble(8);
                         double batUsed = prevBatPercent - batLevel;
-                        updateDataInDatabase(prevID, batLevel, batUsed);
+                        String startTime = cursor.getString(3);
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss", Locale.US);
+                        String endTime = new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date());
+                        Date d1 = null;
+                        Date d2 = null;
+                        try {
+                            d1 = dateFormat.parse(startTime);
+                            d2 = dateFormat.parse(endTime);
+                        } catch (ParseException e) {
+                            Log.d(TAG,"EXCEPTION " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                        double duration = d2.getTime() - d1.getTime();
+                        duration = duration/1000;
+                        Log.d(TAG,"Duration : " + duration);
+                        updateDataInDatabase(prevID, endTime, duration, batLevel, batUsed);
+                        insert = false;
                     }
                 }
             }
 
-            addDataToDatabase(activity, transition, new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date()),
-                    new SimpleDateFormat("dd-MM-yyyy", Locale.US).format(new Date()),
-                    new SimpleDateFormat("EEEE", Locale.ENGLISH).format(date.getTime()),
-                    batLevel, 0, 0,latitude, longitude);
+            if(insert){
+                addDataToDatabase(activity, transition, new SimpleDateFormat("HH:mm:ss", Locale.US).format(new Date()),
+                        "", 0,
+                        new SimpleDateFormat("dd-MM-yyyy", Locale.US).format(new Date()),
+                        new SimpleDateFormat("EEEE", Locale.ENGLISH).format(date.getTime()),
+                        batLevel, 0, 0,latitude, longitude);
+            }
 
             message = "Activity : " + activity + " \nTransition : " + transition;
                     /*+ " \nStart Time : "

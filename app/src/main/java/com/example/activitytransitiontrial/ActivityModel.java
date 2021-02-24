@@ -6,6 +6,8 @@ public class ActivityModel {
     String activity;
     String transition;
     String startTime;
+    String endTime;
+    Double duration;
     String date;
     String dayOfWeek;
     Double batteryPercentageStart;
@@ -14,11 +16,13 @@ public class ActivityModel {
     Double latitude;
     Double longitude;
 
-    public ActivityModel(String activity, String transition, String startTime, String date, String dayOfWeek,
+    public ActivityModel(String activity, String transition, String startTime, String endTime, double duration, String date, String dayOfWeek,
                             Double batteryPercentageStart, Double batteryPercentageEnd, Double batteryPercentageConsumed, Double latitude, Double longitude){
         this.activity = activity;
         this.transition = transition;
         this.startTime = startTime;
+        this.endTime = endTime;
+        this.duration = duration;
         this.date = date;
         this.dayOfWeek = dayOfWeek;
         this.batteryPercentageStart = batteryPercentageStart;
@@ -28,7 +32,9 @@ public class ActivityModel {
         this.longitude = longitude;
     }
 
-    public ActivityModel(Double batteryPercentageEnd, Double batteryPercentageConsumed){
+    public ActivityModel(String endTime, Double duration, Double batteryPercentageEnd, Double batteryPercentageConsumed){
+        this.endTime = endTime;
+        this.duration = duration;
         this.batteryPercentageEnd = batteryPercentageEnd;
         this.batteryPercentageConsumed = batteryPercentageConsumed;
     }
@@ -48,6 +54,10 @@ public class ActivityModel {
     public void setStartTime(String startTime) {
         this.startTime = startTime;
     }
+
+    public void setEndTime(String endTime) {this.endTime = endTime;}
+
+    public void setDuration(Double duration) {this.duration = duration;}
 
     public void setDate(String date) {
         this.date = date;
@@ -92,6 +102,10 @@ public class ActivityModel {
     public String getStartTime() {
         return startTime;
     }
+
+    public String getEndTime() { return  endTime; }
+
+    public Double getDuration() { return  duration; }
 
     public String getDate() {
         return date;

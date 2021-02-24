@@ -14,7 +14,7 @@ public class DBHandler extends SQLiteOpenHelper {
     private final static String TAG = "DETECT TRANSITION";
     //Database version.
     //Note: Increase the database version every-time you make changes to your table structure.
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 6;
 
     //Database Name
     private static final String DATABASE_NAME = "activityDetails";
@@ -26,6 +26,8 @@ public class DBHandler extends SQLiteOpenHelper {
     private static final String KEY_ACTIVITY = "activity";
     private static final String KEY_TRANSITION = "transition";
     private static final String KEY_START_TIME = "startTime";
+    private static final String KEY_END_TIME = "endTime";
+    private static final String KEY_DURATION = "duration";
     private static final String KEY_DATE = "date";
     private static final String KEY_DAY_OF_WEEK = "dayOfWeek";
     private static final String KEY_BATTERY_PERCENTAGE_START = "batteryPercentageStart";
@@ -46,6 +48,8 @@ public class DBHandler extends SQLiteOpenHelper {
                 + KEY_ACTIVITY + " TEXT, "
                 + KEY_TRANSITION + " TEXT, "
                 + KEY_START_TIME + " TEXT, "
+                + KEY_END_TIME + " TEXT, "
+                + KEY_DURATION + " TEXT, "
                 + KEY_DATE + " TEXT, "
                 + KEY_DAY_OF_WEEK + " TEXT, "
                 + KEY_BATTERY_PERCENTAGE_START + " TEXT, "
@@ -79,6 +83,8 @@ public class DBHandler extends SQLiteOpenHelper {
         values.put(KEY_ACTIVITY, activity.getActivity());
         values.put(KEY_TRANSITION, activity.getTransition());
         values.put(KEY_START_TIME, activity.getStartTime());
+        values.put(KEY_END_TIME, activity.getEndTime());
+        values.put(KEY_DURATION, activity.getDuration());
         values.put(KEY_DATE, activity.getDate());
         values.put(KEY_DAY_OF_WEEK, activity.dayOfWeek);
         values.put(KEY_BATTERY_PERCENTAGE_START, activity.getBatteryPercentageStart());
@@ -93,7 +99,7 @@ public class DBHandler extends SQLiteOpenHelper {
         db.close();
     }
 
-    // Getting single student details through ID
+    // Getting single activity details through ID
     /*public ActivityModel getActivity(int activity) {
 
         SQLiteDatabase db = this.getReadableDatabase();
@@ -103,8 +109,8 @@ public class DBHandler extends SQLiteOpenHelper {
         Cursor cursor = db.query(TABLE_ACTIVITY,
                 new String[] { KEY_ACTIVITY, KEY_START_TIME, KEY_DATE, KEY_DAY_OF_WEEK, KEY_BATTERY_PERCENTAGE,
                                 KEY_LATITUDE, KEY_LONGITUDE},
-                KEY_STUDENT_ID + "=?",
-                new String[] { String.valueOf(studentID) },
+                KEY_ID + "=?",
+                new String[] { String.valueOf(_ID) },
                 null,
                 null,
                 null,
@@ -113,16 +119,16 @@ public class DBHandler extends SQLiteOpenHelper {
         if (cursor != null)
             cursor.moveToFirst();
 
-        ActivityModel student = new ActivityModel(
+        ActivityModel activity = new ActivityModel(
                 Integer.parseInt(cursor.getString(0)),
                 cursor.getString(1),
                 cursor.getString(2));
 
-        //Return Student
+        //Return Activity
         return activity;
     }*/
 
-    // Getting All Students
+    // Getting All Activities
     public List<ActivityModel> getAllActivities() {
         List<ActivityModel> activityList = new ArrayList<ActivityModel>();
 
@@ -140,12 +146,14 @@ public class DBHandler extends SQLiteOpenHelper {
                         cursor.getString(2),
                         cursor.getString(3),
                         cursor.getString(4),
-                        cursor.getString(5),
-                        cursor.getDouble(6),
-                        cursor.getDouble(7),
+                        cursor.getDouble(5),
+                        cursor.getString(6),
+                        cursor.getString(7),
                         cursor.getDouble(8),
                         cursor.getDouble(9),
-                        cursor.getDouble(10));
+                        cursor.getDouble(10),
+                        cursor.getDouble(11),
+                        cursor.getDouble(12));
 
                 activityList.add(activity);
             } while (cursor.moveToNext());
@@ -161,6 +169,8 @@ public class DBHandler extends SQLiteOpenHelper {
 
         Log.d(TAG, "PrevID : " + String.valueOf(prevID));
         ContentValues values = new ContentValues();
+        values.put(KEY_END_TIME, activity.getEndTime());
+        values.put(KEY_DURATION, activity.getDuration());
         values.put(KEY_BATTERY_PERCENTAGE_END, activity.getBatteryPercentageEnd());
         values.put(KEY_BATTERY_PERCENTAGE_CONSUMED, activity.getBatteryPercentageConsumed());
 
